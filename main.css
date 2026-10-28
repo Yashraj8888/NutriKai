@@ -221,7 +221,7 @@ section { padding: 3.25rem 0; }
 }
 .btn-add:hover { background: var(--color-forest-dark); }
 .btn-add:disabled:not(.is-added) { background: var(--color-line); color: var(--color-ink-soft); cursor: not-allowed; }
-.btn-add.is-added { background: var(--color-gold); }
+.btn-add.is-added, .btn-add.is-added:hover { background: #D7D8D2; color: #56584F; cursor: default; }
 
 /* ==========================================================
    STORY

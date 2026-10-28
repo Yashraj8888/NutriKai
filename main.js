@@ -46,7 +46,6 @@ const CART_KEY = "beeja_cart_v1";
 const $ = id => document.getElementById(id);
 
 let cart = loadCart();
-let cardQty = {}; // per-card quantity before "Add to Cart" — starts at 0
 
 function loadCart() {
   try { return JSON.parse(localStorage.getItem(CART_KEY)) || {}; }
@@ -76,6 +75,16 @@ function handleImageError(img, slug) {
    PRODUCT GRID
    --------------------------------------------------------- */
 
+function syncProductButtons() {
+  document.querySelectorAll(".product-card").forEach(card => {
+    const button = card.querySelector(".btn-add");
+    const isInCart = (cart[card.dataset.slug] || 0) > 0;
+    button.disabled = isInCart;
+    button.textContent = isInCart ? "Added ✓" : "Add to Cart";
+    button.classList.toggle("is-added", isInCart);
+  });
+}
+
 function renderProducts() {
   $("product-grid").innerHTML = PRODUCTS.map(p => `
     <article class="product-card" data-slug="${p.slug}">
@@ -91,15 +100,11 @@ function renderProducts() {
         <button class="product-more" type="button" data-action="more">Read more</button>
         <div class="product-footer">
           <span class="product-price">${formatRupees(p.price)}</span>
-          <div class="qty-stepper">
-            <button class="qty-btn" type="button" data-action="dec" aria-label="Decrease quantity">&minus;</button>
-            <span class="qty-value">0</span>
-            <button class="qty-btn" type="button" data-action="inc" aria-label="Increase quantity">+</button>
-          </div>
         </div>
-        <button class="btn-add" type="button" data-action="add" disabled>Add to Cart</button>
+        <button class="btn-add" type="button" data-action="add">Add to Cart</button>
       </div>
     </article>`).join("");
+  syncProductButtons();
 }
 
 $("product-grid").addEventListener("click", e => {
@@ -109,37 +114,16 @@ $("product-grid").addEventListener("click", e => {
 
   const slug = card.dataset.slug;
   const action = btn.dataset.action;
-  const addBtn = card.querySelector(".btn-add");
-  const valueEl = card.querySelector(".qty-value");
 
   if (action === "more") {
     const open = card.classList.toggle("is-expanded");
     btn.textContent = open ? "Show less" : "Read more";
   }
 
-  if (action === "inc" || action === "dec") {
-    const next = Math.max(0, (cardQty[slug] || 0) + (action === "inc" ? 1 : -1));
-    cardQty[slug] = next;
-    valueEl.textContent = next;
-    addBtn.disabled = next === 0;
-  }
-
   if (action === "add") {
-    const qty = cardQty[slug] || 0;
-    if (qty < 1) return;
-    cart[slug] = (cart[slug] || 0) + qty;
+    cart[slug] = (cart[slug] || 0) + 1;
     saveCart();
     renderCart();
-
-    cardQty[slug] = 0;
-    valueEl.textContent = 0;
-    addBtn.disabled = true;
-    addBtn.textContent = "Added ✓";
-    addBtn.classList.add("is-added");
-    setTimeout(() => {
-      addBtn.textContent = "Add to Cart";
-      addBtn.classList.remove("is-added");
-    }, 900);
   }
 });
 
@@ -158,6 +142,7 @@ function renderCart() {
   const entries = cartEntries();
   const count = entries.reduce((s, e) => s + e.qty, 0);
   const total = formatRupees(cartTotal(entries));
+  syncProductButtons();
 
   $("cart-count").textContent = count;
   $("cart-count").dataset.empty = String(count === 0);
